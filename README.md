@@ -1,8 +1,8 @@
 # Classic Components
 
-This package provides decorator for creating components with 
+This package provides decorator for creating components with
 explicitly defined dependencies for Dependency Injection.
-Decorator marks class as component and, optionally, generates constructor from 
+Decorator marks class as component and, optionally, generates constructor from
 type annotations.
 
 Part of project "Classic".
@@ -24,3 +24,5 @@ class SomeService:
 service = SomeService(prop=1)
 service.action()  # prints 1
 ```
+
+## к проекту 15506
