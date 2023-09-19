@@ -40,7 +40,7 @@ class SuperVisor:
 
         raise Exception('Thread not found.')
 
-    @actor.periodic(0.001)  # TODO
+    # @actor.periodic(0.001)  # TODO
     def check_threads(self):
         # поддерживаем жизнь в потоках
         for thread in self.threads:
@@ -56,6 +56,10 @@ class SuperVisor:
                 pass
             except Exception as ex:
                 logging.error(ex)
+
+    def wait(self):
+        # TODO подождать всех акторов
+        pass
 
     def run_in_background(self):
         supervisor_thread = Thread(

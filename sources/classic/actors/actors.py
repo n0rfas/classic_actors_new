@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from queue import Queue
 from typing import Any, Callable, Dict, Tuple
-from classic.components import component
+from evraz.classic.components import component
 from .future import Future
 
 
