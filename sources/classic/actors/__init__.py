@@ -1,4 +1,5 @@
-from .actors import actor, Call
+from .actor import Actor
+from .call import Call
 from .future import Future
-from .supervisor import SuperVisor
 from .scheduler import Scheduler
+from .supervisor import Supervisor

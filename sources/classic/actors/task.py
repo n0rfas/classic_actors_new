@@ -7,14 +7,12 @@ from croniter import croniter
 
 LOGGER_PREFIX = 'evraz.task'
 
-Job = Callable[[], None]  # RW а кому будет отдавать значение
-
 
 class Task(ABC):
 
     def __init__(
         self,
-        job: Job,
+        job: Callable[[], None],
         name: Optional[str] = None,
         is_overdue_gap_needed: bool = True,
     ) -> None:

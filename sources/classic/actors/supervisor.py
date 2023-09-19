@@ -1,8 +1,8 @@
-from threading import Thread
-from time import sleep
-import queue
 import logging
-from .actors import Call, actor
+import queue
+from threading import Thread
+
+from .call import Call
 
 
 def loop(actor):
@@ -16,22 +16,20 @@ def loop(actor):
             logging.error(ex)
 
 
-@actor
-class SuperVisor:
+# @actor
+class Supervisor:
 
     def __post_init__(self) -> None:
         self.threads = []
 
-    @actor.method
+    # @actor.method
     def add(self, actor):
-        # добавляем новый поток для актора
         thread = Thread(target=loop, args=(actor, ), name=str(id(actor)))
         self.threads.append(thread)
         thread.start()
 
-    @actor.method
+    # @actor.method
     def remove(self, actor):
-        # удаляем не нужный поток
         for thread in self.threads:
             if thread.name == str(id(actor)):
                 self.threads.remove(thread)
@@ -42,7 +40,6 @@ class SuperVisor:
 
     # @actor.periodic(0.001)  # TODO
     def check_threads(self):
-        # поддерживаем жизнь в потоках
         for thread in self.threads:
             if not thread.is_alive():
                 thread.start()
@@ -50,7 +47,7 @@ class SuperVisor:
     def run(self):
         while True:
             try:
-                call: Call = actor.inbox.get(timeout=0.001)
+                call: Call = self.inbox.get(timeout=0.001)
                 call()
             except queue.Empty:
                 pass

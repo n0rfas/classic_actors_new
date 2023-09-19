@@ -4,13 +4,13 @@ from sources.classic.actors.scheduler import Scheduler
 
 
 def func():
-    print('time= ', datetime.now(timezone.utc).time())
+    print('done')
+    return 15
 
 
 scheduler = Scheduler()
 
-scheduler.by_period(10, func)
-
+scheduler.with_delay(5, func)
 scheduler.run()
 
-print('end')
+print('step 1')
