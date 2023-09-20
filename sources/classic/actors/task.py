@@ -13,24 +13,22 @@ class Task(ABC):
     def __init__(
         self,
         job: Callable[[], None],
+        args: tuple = None,
+        kwargs: dict = None,
         name: Optional[str] = None,
         is_overdue_gap_needed: bool = True,
     ) -> None:
         self._logger = logging.getLogger(LOGGER_PREFIX)
         self._job = job
+        self._args = args or None
+        self._kwargs = kwargs or None
         self._name = name
         self._is_overdue_gap_needed = is_overdue_gap_needed
 
-    @abstractmethod
-    def set_next_run_time(self):
-        ...
-
-    def get_next_run_time(self) -> datetime:
-        return self._next_run_time
-
     @property
-    def is_overdue_gap_needed(self):
-        return self._is_overdue_gap_needed
+    @abstractmethod
+    def next_run_time(self) -> datetime:
+        ...
 
     def run_job(self) -> Any:
         self._logger.info(
@@ -40,7 +38,7 @@ class Task(ABC):
         )
 
         try:
-            self._job()  # RW кому и зачем передавать результат?
+            self._job(*self._args, **self._kwargs)
         except Exception as ex:
             self._logger.exception(
                 'Unexpected error occurred in task [%s]: "%s".',
@@ -50,13 +48,11 @@ class Task(ABC):
         else:
             self._logger.info('Task completed [%s]', self._name)
 
-        # self.set_next_run_time()
-
     def __lt__(self, other) -> bool:
-        return self.next_run_time < other.next_run_time
+        return self._next_run_time < other._next_run_time
 
     def __gt__(self, other) -> bool:
-        return self.next_run_time > other.next_run_time
+        return self._next_run_time > other._next_run_time
 
 
 class OneTimeTask(Task):
