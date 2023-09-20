@@ -2,25 +2,32 @@ import logging
 import queue
 import threading
 from abc import ABC
-from typing import Any
+from dataclasses import field
+from typing import Any, Callable
 
-from sources.classic.actors.primitives import Call
+from classic.components import component
 
-from .future import Future
+from .primitives import Call, Future
 
-LOGGER_PREFIX = 'evraz.actor'
-
-STOP = 'STOP'
+STOP = 'STOP'  # сообщение посылаемое в inbox для остановки цикла актора
 
 
+@component
 class Actor(ABC):
-    inbox: queue.Queue
-    thread: threading.Thread
+    """
+    Класс актора, который всегда выполняется в отдельном потоке.
+    Потокобезопасен.
+    """
+    inbox: queue.Queue = field(default_factory=queue.Queue)
+    thread: threading.Thread = field(default=None)
     loop_timeout: float = 0.01
 
-    _stopped: bool
+    _stopped: bool = False
 
     def loop(self) -> None:
+        """
+        Основной рабочий цикл актора.
+        """
         while not self._stopped:
             try:
                 message = self.inbox.get(timeout=self._get_timeout())
@@ -30,24 +37,11 @@ class Actor(ABC):
             except Exception as ex:
                 logging.error(ex)
 
-    def _on_timeout(self):
-        pass
-
-    def _on_unknown_message(self, message: Any):
-        pass
-
-    def _get_timeout(self):
-        return self.loop_timeout
-
-    def _handle(self, message):
-        if message is STOP:
-            self._stopped = True
-        elif isinstance(message, Call):
-            message()
-        else:
-            self._on_unknown_message(message)
-
     def run(self):
+        """
+        Запускает цикл работы актора в отдельном потоке.
+        Если поток упал - поднимает его.
+        """
         if not self.thread:
             self.thread = threading.Thread(target=self.loop)
 
@@ -55,10 +49,22 @@ class Actor(ABC):
             self.thread.start()
 
     def stop(self):
+        """
+        Останавливает поток актора.
+        """
         self.inbox.put(STOP)
 
     @staticmethod
-    def method(method) -> Future:
+    def method(method: Callable[[], Any]) -> Future:
+        """
+        Декоратор методов актора который делает их потокобезопасными.
+
+        Args:
+            method (Callable[[], Any]): Метод класса актора для декорирования.
+
+        Returns:
+            Future: Ссылка на будущий результат выполнения метода.
+        """
 
         def wrapper(*args, **kwargs):
             call = Call(method, args, kwargs)
@@ -66,3 +72,42 @@ class Actor(ABC):
             return call.result
 
         return wrapper
+
+    def _get_timeout(self) -> float:
+        """
+        Возвращает время ожидания поступлений сообщений
+        в основном рабочем цикле.
+
+        Returns:
+            float: тайм-аут ожидания сообщений в inbox.
+        """
+        return self.loop_timeout
+
+    def _handle(self, message: Any) -> None:
+        """
+        Обрабатывает сообщение которое послали актору в inbox.
+
+        Args:
+            message (Any): Сообщение отправленное в inbox.
+        """
+        if message is STOP:
+            self._stopped = True
+        elif isinstance(message, Call):
+            message()
+        else:
+            self._on_unknown_message(message)
+
+    def _on_timeout(self):
+        """
+        Обрабатывает истечение времени ожидания новых сообщений в inbox.
+        """
+        pass
+
+    def _on_unknown_message(self, message: Any):
+        """
+        Обрабатывает неизвестный тип сообщений отправленных в inbox.
+
+        Args:
+            message (Any): Сообщение отправленное в inbox.
+        """
+        pass
