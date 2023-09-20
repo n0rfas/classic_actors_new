@@ -25,13 +25,12 @@ class Task(ABC):
     def set_next_run_time(self):
         ...
 
+    def get_next_run_time(self) -> datetime:
+        return self._next_run_time
+
     @property
     def is_overdue_gap_needed(self):
         return self._is_overdue_gap_needed
-
-    # @property
-    def get_next_run_time(self) -> datetime:
-        return self._next_run_time
 
     def run_job(self) -> Any:
         self._logger.info(

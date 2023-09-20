@@ -1,8 +1,18 @@
 import queue
-import threading
 
 from .base import BaseActor
 from .call import Call
+from .future import Future
+
+
+def actor_method(method) -> Future:
+
+    def wrapper(*args, **kwargs):
+        call = Call(method, args, kwargs)
+        args[0].inbox.put(call)
+        return call.result
+
+    return wrapper
 
 
 class Actor(BaseActor):
@@ -16,7 +26,3 @@ class Actor(BaseActor):
                 pass
             except Exception as ex:
                 self._logger.error(ex)
-
-    def run(self) -> None:
-        thread = threading.Thread(target=self.loop)
-        thread.start()

@@ -1,9 +1,11 @@
 import heapq
 import queue
+import threading
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Union
 
 from .base import BaseActor
+from .call import Call
 from .task import CronTask, OneTimeTask, PeriodicTask, Task
 
 DEFAULT_TIMEOUT = 60
@@ -14,7 +16,7 @@ class Scheduler(BaseActor):
     def __init__(self) -> None:
         super().__init__()
 
-        self._task_q = []
+        self._launch_plan = []
 
     def loop(self):
         while not self._stopped:
@@ -23,12 +25,9 @@ class Scheduler(BaseActor):
                 task = self.inbox.get(block=True, timeout=timeout)
                 self._add_task_to_heap(task)
             except queue.Empty:
-                if self._task_q:
-                    task: Task = heapq.heappop(self._task_q)
+                if self._launch_plan:
+                    task: Task = heapq.heappop(self._launch_plan)
                     task.run_job()
-
-    def run(self):
-        self.loop()
 
     def with_delay(self, delay: float, job: Callable[[], Any], name=None):
         date = datetime.now(timezone.utc) + timedelta(seconds=delay)
@@ -50,10 +49,11 @@ class Scheduler(BaseActor):
         self.inbox.put(task_name)
 
     def _get_timeout(self):
-        if len(self._task_q) < 1:
+
+        if len(self._launch_plan) < 1:
             return DEFAULT_TIMEOUT
 
-        dt_next_task = self._task_q[0].get_next_run_time()
+        dt_next_task = self._launch_plan[0].get_next_run_time()
         dt_current = datetime.now(timezone.utc)
         if dt_next_task < dt_current:
             return 0
@@ -62,12 +62,12 @@ class Scheduler(BaseActor):
 
     def _add_task_to_heap(self, task):
         if isinstance(task, Task):
-            heapq.heappush(self._task_q, task)
+            heapq.heappush(self._launch_plan, task)
         elif isinstance(task, str):
-            for t in self._task_q:
+            for t in self._launch_plan:
                 if t.name == task:
                     del t
-                    heapq.heapify(self._task_q)
+                    heapq.heapify(self._launch_plan)
                     break
         else:
             raise Exception('Unknown type task')
