@@ -1,6 +1,6 @@
 import time
 
-from sources.classic.actors.actor import Actor
+from sources.classic.actors import Actor
 
 
 class SomeClass(Actor):

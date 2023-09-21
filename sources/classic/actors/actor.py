@@ -18,11 +18,15 @@ class Actor(ABC):
     Класс актора, который всегда выполняется в отдельном потоке.
     Потокобезопасен.
     """
-    inbox: queue.Queue = field(default_factory=queue.Queue)
+    inbox: queue.Queue = field(default=None)  # BUG
     thread: threading.Thread = field(default=None)
     loop_timeout: float = 0.01
 
+    _thread_name = None
     _stopped: bool = False
+
+    def __post_init__(self):  # BUG
+        self.inbox = queue.Queue()  # BUG
 
     def loop(self) -> None:
         """
@@ -43,7 +47,10 @@ class Actor(ABC):
         Если поток упал - поднимает его.
         """
         if not self.thread:
-            self.thread = threading.Thread(target=self.loop)
+            self.thread = threading.Thread(
+                target=self.loop,
+                name=self._thread_name,
+            )
 
         if not self.thread.is_alive():
             self.thread.start()
