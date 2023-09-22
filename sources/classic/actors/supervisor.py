@@ -1,29 +1,18 @@
-import queue
 import threading
-from dataclasses import field
-from typing import Any
-
-from classic.components import component
 
 from sources.classic.actors.actor import Actor
 
 
-@component
 class Supervisor(Actor):
     """
     Супервизор акторов. Запускает, останавливает, поднимает при падении.
     """
-    # имя потока супервизора
-    _thread_name = 'supervisor'
-    # словарь акторов где ключ это id процесса актора
-    actors: dict[int, Actor] = field(default_factory=dict)
-    # обработчик не перехваченного исключения метода Thread.run()
-    default_excepthook: Any = field(default=None)
 
-    def __post_init__(self):
-        self.inbox = queue.Queue()  # BUG
-        # подменяем обработчик при падении потока нашим обработчиком
+    def __init__(self) -> None:
+        super().__init__()
+        self.actors: dict[int, Actor] = {}
         self.default_excepthook = threading.excepthook
+
         threading.excepthook = self.excepthook
 
     def __del__(self):
@@ -68,7 +57,3 @@ class Supervisor(Actor):
             actor.run()
 
         self.default_excepthook(args)
-
-    # BUG при вызове стоп нужно останавливать все потоки?
-    # def stop(self):
-    #     pass

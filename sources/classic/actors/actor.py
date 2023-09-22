@@ -2,31 +2,26 @@ import logging
 import queue
 import threading
 from abc import ABC
-from dataclasses import field
 from typing import Any, Callable
-
-from classic.components import component
 
 from .primitives import Call, Future
 
 STOP = 'STOP'  # сообщение посылаемое в inbox для остановки цикла актора
 
 
-@component
 class Actor(ABC):
     """
     Класс актора, который всегда выполняется в отдельном потоке.
     Потокобезопасен.
     """
-    inbox: queue.Queue = field(default=None)  # BUG
-    thread: threading.Thread = field(default=None)
-    loop_timeout: float = 0.01
 
-    _thread_name = None
-    _stopped: bool = False
+    def __init__(self) -> None:
+        super().__init__()
+        self.inbox = queue.Queue()
+        self.thread = None
+        self.loop_timeout = 0.01
 
-    def __post_init__(self):  # BUG
-        self.inbox = queue.Queue()  # BUG
+        self._stopped: bool = False
 
     def loop(self) -> None:
         """
@@ -47,10 +42,7 @@ class Actor(ABC):
         Если поток упал - поднимает его.
         """
         if not self.thread:
-            self.thread = threading.Thread(
-                target=self.loop,
-                name=self._thread_name,
-            )
+            self.thread = threading.Thread(target=self.loop)
 
         if not self.thread.is_alive():
             self.thread.start()

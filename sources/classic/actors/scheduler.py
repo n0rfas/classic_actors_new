@@ -1,25 +1,21 @@
 import heapq
-from dataclasses import field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Union
-
-from classic.components import component
 
 from sources.classic.actors.actor import Actor
 
 from .task import CronTask, OneTimeTask, PeriodicTask, Task
 
 
-@component
 class Scheduler(Actor):
     """
     Планировщик задач. Вызывает переданные ему Callable объекты в своем потоке
     в соответствии с расписанием.
     """
-    # имя потока планировщика
-    _thread_name = 'scheduler'
-    # список задач для супервизора
-    _tasks: list[Task] = field(default_factory=list)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._tasks: list[Task] = []
 
     @Actor.method
     def with_delay(
